@@ -1,7 +1,7 @@
-[Gedit Plugin]
+[Plugin]
 Loader=python
 Module=smart_indent
-IAge=2
+IAge=3
 Name=Smart Indent
 Name[ru]=Умные отступы
 Description=A Smart Indentation Plugin for Gedit
