@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 # Smart Indent Plugin
-# Copyright © 2008 Alexandre da Silva
+# Copyright © 2008 Alexandre da Silva 
 #
 # This file is part of Gmate.
 #
 # See LICENTE.TXT for licence information
 
-import gedit
-import gtk
-import gtk.glade
-import gobject
-import gconf
+## gtk related imports
+from gi.repository import Gedit
+from gi.repository import GObject
+from gi.repository import Gtk
+## stdlib
 import re
 import os
 
@@ -180,12 +180,17 @@ def get_remove_blanklines_eof(lang):
 
 # ------------------------------------------------------------------------------
 
-class SmartIndentPlugin(gedit.Plugin):
+class SmartIndentPlugin(GObject.Object, Gedit.WindowActivatable):
     handler_ids = []
 
+    __gtype_name__ = "smart_indent"
+    name = __gtype_name__
+    window = GObject.property(type = Gedit.Window)
+
+
     def __init__(self):
-        gedit.Plugin.__init__(self)
-        self.instances = {}
+        GObject.Object.__init__(self)
+        
 
 
     def activate(self, window):
