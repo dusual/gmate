@@ -10,18 +10,27 @@
 from gi.repository import Gedit
 from gi.repository import GObject
 from gi.repository import Gtk
+from gi.repository import GConf
 ## stdlib
 import re
 import os
 
-GLADE_FILE = os.path.join(os.path.dirname(__file__), "dialog.glade")
+GLADE_FILE = os.path.join(os.path.dirname(__file__), "dialog.ui")
 
-default_tab_size_key   = "/apps/gedit-2/preferences/editor/tabs/tabs_size"
-default_use_spaces_key = "/apps/gedit-2/preferences/editor/tabs/insert_spaces"
+CLIENT_PRELOAD_NONE = GConf.ClientPreloadType(0)
 
-gconf_base_uri = u"/apps/gedit-2/plugins/smart_indent"
-config_client = gconf.client_get_default()
-config_client.add_dir(gconf_base_uri, gconf.CLIENT_PRELOAD_NONE)
+
+
+
+
+
+
+default_tab_size_key   = "/apps/gedit/preferences/editor/tabs/tabs_size"
+default_use_spaces_key = "/apps/gedit/preferences/editor/tabs/insert_spaces"
+
+gconf_base_uri = u"/apps/gedit/plugins/smart_indent"
+config_client = GConf.Client.get_default()
+config_client.add_dir(gconf_base_uri,CLIENT_PRELOAD_NONE)
 
 DEFAULT_USE_SPACES = config_client.get(default_use_spaces_key)
 if DEFAULT_USE_SPACES:
