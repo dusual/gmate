@@ -199,39 +199,23 @@ class SmartIndentPlugin(GObject.Object, Gedit.WindowActivatable):
 
     def __init__(self):
         GObject.Object.__init__(self)
-        
+        config_window = None        
 
 
-    def activate(self, window):
-        view = window.get_active_view()
+    def do_activate(self):
+        view = self.window.get_active_view()
 
-        # Do statusbar stuff only if gedit version is bellow 2.25
-        self.do_setup_statusbar_stuff = gedit.version < (2,25,0)
-        self.DATA_TAG = 'LanguageStatusFrameWidget'
-        if self.do_setup_statusbar_stuff:
-            self.statusbar = window.get_statusbar()
-            self.frame = self.statusbar.get_data(self.DATA_TAG)
-            if self.frame is None:
-                self.status_label = gtk.Label('')
-                self.frame = gtk.Frame()
-                self.status_label.set_alignment(0, 0)
-                self.status_label.show()
-                self.frame.add(self.status_label)
-                self.frame.show()
-                self.statusbar.pack_end(self.frame, False, False)
-                self.statusbar.set_data(self.DATA_TAG, self.frame)
-            self.set_status(view)
-
-        self.instances[window] = ConfigurationWindowHelper(self, window)
+       
+        self.config_window = ConfigurationWindowHelper(self, self.window)
 
         actions = [
             ('SmartIndentConfiguration', None, _('Smart Indent Configuration'), '<Control><Alt><Shift>t', _("Configure smart indent settings for this language"), self.run_dialog)
         ]
 
-        action_group = gtk.ActionGroup("TabConfigurationActions")
-        action_group.add_actions(actions, window)
+        action_group = Gtk.ActionGroup("TabConfigurationActions")
+        action_group.add_actions(actions, self.window)
 
-        self.manager = window.get_ui_manager()
+        self.manager = self.window.get_ui_manager()
         self.manager.insert_action_group(action_group, -1)
         self.manager.add_ui_from_string(user_interface)
         self.setup_smart_indent(view, 'plain_text')
@@ -242,34 +226,18 @@ class SmartIndentPlugin(GObject.Object, Gedit.WindowActivatable):
             if view.handler_is_connected(handler_id):
                 view.disconnect(handler_id)
 
-        self.instances[window].deactivate()
+        self.config_window.deactivate()
 
         if self.do_setup_statusbar_stuff:
             self.status_label.set_text('')
 
 
     def run_dialog(self, action, window):
-        self.instances[window].configuration_dialog()
+        self.config_window.configuration_dialog()
 
 
     def set_status(self, view):
-        if self.do_setup_statusbar_stuff:
-            if view:
-                space = view.get_insert_spaces_instead_of_tabs()
-                if space:
-                    label_str = '%s - %s Spaces'
-                else:
-                    label_str = '%s - Tabsize %s'
-                size  = view.get_tab_width()
-                language = view.get_buffer().get_language()
-                if language:
-                    lang = language.get_name()
-                else:
-                    lang = "Plain Text"
-                label = label_str % (str(lang), str(size))
-            else:
-                label=""
-            self.status_label.set_text(label)
+        pass
 
 
     def update_ui(self, window):
@@ -286,7 +254,7 @@ class SmartIndentPlugin(GObject.Object, Gedit.WindowActivatable):
 
     def setup_smart_indent(self, view, lang):
         # Configure a "per-view" instance
-        if type(view) == gedit.View:
+        if type(view) == Gedit.View:
             if getattr(view, 'smart_indent_instance', False) == False:
                 setattr(view, 'smart_indent_instance', SmartIndent())
                 handler_id = view.connect('key-press-event', view.smart_indent_instance.key_press_handler)
@@ -303,20 +271,22 @@ class ConfigurationWindowHelper:
 
 
     def configuration_dialog(self):
-        glade_xml = gtk.glade.XML(GLADE_FILE)
+        glade_xml = Gtk.Builder()
+        glade_xml.add_from_file(GLADE_FILE)
+
         if self.dialog:
             self.dialog.set_focus(True)
             return
 
-        self.dialog = glade_xml.get_widget('config_dialog')
+        self.dialog = glade_xml.get_object('config_dialog')
         self.dialog.connect('delete_event', self.on_close)
         self.dialog.show_all()
         self.dialog.set_transient_for(self.window)
 
-        self.btn_cancel = glade_xml.get_widget('btn_cancel')
+        self.btn_cancel = glade_xml.get_object('btn_cancel')
         self.btn_cancel.connect('clicked', self.on_cancel)
 
-        self.btn_apply = glade_xml.get_widget('btn_apply')
+        self.btn_apply = glade_xml.get_object('btn_apply')
         self.btn_apply.connect('clicked', self.on_apply)
 
         # Get data from current document, not from configuration, because user
@@ -333,22 +303,22 @@ class ConfigurationWindowHelper:
             lang_name = _(u'Plain Text')
             self.lang_id = 'plain_text'
 
-        self.lbl_language = glade_xml.get_widget('lbl_language')
+        self.lbl_language = glade_xml.get_object('lbl_language')
         self.lbl_language.set_markup("Language: <b>%s</b>" % lang_name)
 
-        self.edt_size = glade_xml.get_widget('edt_size')
+        self.edt_size = glade_xml.get_object('edt_size')
         self.edt_size.set_value(size)
 
-        self.cbx_use_spaces = glade_xml.get_widget('cbx_use_spaces')
+        self.cbx_use_spaces = glade_xml.get_object('cbx_use_spaces')
         self.cbx_use_spaces.set_active(space)
 
-        self.edt_indent_regex = glade_xml.get_widget('edt_indent_regex')
+        self.edt_indent_regex = glade_xml.get_object('edt_indent_regex')
         self.edt_indent_regex.set_text(get_indent_regex(self.lang_id) or '')
 
-        self.edt_unindent_regex = glade_xml.get_widget('edt_unindent_regex')
+        self.edt_unindent_regex = glade_xml.get_object('edt_unindent_regex')
         self.edt_unindent_regex.set_text(get_unindent_regex(self.lang_id) or '')
 
-        self.edt_unindent_keystrokes = glade_xml.get_widget('edt_unindent_keystrokes')
+        self.edt_unindent_keystrokes = glade_xml.get_object('edt_unindent_keystrokes')
         self.edt_unindent_keystrokes.set_text(get_unindent_keystrokes(self.lang_id) or '')
 
         # TrailsSave Options
@@ -356,13 +326,13 @@ class ConfigurationWindowHelper:
         insert_newline = get_insert_newline_eof(self.lang_id)
         remove_blanklines = get_remove_blanklines_eof(self.lang_id)
 
-        self.cbx_crop_spaces_on_eol = glade_xml.get_widget('cbx_crop_spaces_on_eol')
+        self.cbx_crop_spaces_on_eol = glade_xml.get_object('cbx_crop_spaces_on_eol')
         self.cbx_crop_spaces_on_eol.set_active(crop_spaces)
 
-        self.cbx_insert_newline_at_eof = glade_xml.get_widget('cbx_insert_newline_at_eof')
+        self.cbx_insert_newline_at_eof = glade_xml.get_object('cbx_insert_newline_at_eof')
         self.cbx_insert_newline_at_eof.set_active(insert_newline)
 
-        self.cbx_remove_blank_lines_at_eof = glade_xml.get_widget('cbx_remove_blank_lines_at_eof')
+        self.cbx_remove_blank_lines_at_eof = glade_xml.get_object('cbx_remove_blank_lines_at_eof')
         self.cbx_remove_blank_lines_at_eof.set_active(remove_blanklines)
 
 
